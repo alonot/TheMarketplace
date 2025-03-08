@@ -42,7 +42,9 @@ def get_session():
     yields a session for each request. Hence each request will occur in separate session
     '''
     with Session(engine) as session:
-        yield Session
+        # yield Session
+        #seems like an error
+        yield session
 
 ## A dependency which will run on each request
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -55,7 +57,7 @@ from .app.views import apirouter
 @app.get('/', response_class=HTMLResponse)
 def home():
     return """
-    <h1>Welcome</h1> <strong>to the TheIITPKDMarkplace api.</strong>
+    <h1>Welcome</h1> <strong>to the TheIITPKDMarketplace api.</strong>
     """
 
 app.include_router(apirouter, prefix='/api')
