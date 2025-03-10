@@ -12,10 +12,14 @@ class Response(BaseModel):
     success: bool
     message: str
 
-
 class SignInResponse(Response):
-    access_token: str
-    username: str
+    access_token: str | None
+    username: str | None
+
+# Original?
+# class SignInResponse(Response):
+#     access_token: str | None
+#     username: str | None
 
 class SignUpResponse(Response):
       pass
