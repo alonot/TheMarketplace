@@ -6,7 +6,7 @@ from jwt.exceptions import InvalidTokenError
 from .models import User
 from .request_models import RequestSignUp, RequestSignIn
 from .response_models import SignUpResponse, SignInResponse
-from .utils import get_password_hash, verify_password, create_access_token, decode_access_token
+from .utils import get_password_hash, verify_password, create_access_token, create_refresh_token, decode_refresh_token, decode_access_token
 from ..main import SessionDep
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -16,53 +16,83 @@ apirouter = APIRouter()
 
 authrouter = APIRouter(prefix="/auth")
 
+from fastapi import APIRouter, Request
+from sqlmodel import select
+from datetime import datetime, timedelta
+from fastapi.responses import JSONResponse
+from ..main import SessionDep
+from .models import User
+from .utils import decode_access_token, decode_refresh_token, create_access_token
+
+authrouter = APIRouter(prefix="/auth")
+
 @authrouter.middleware("http")
 async def authenticate(request: Request, session: SessionDep, call_next):
 
-    if not request.url.path.startswith("/api/auth"):
-        return await call_next(request)
-
     access_token = request.headers.get("Authorization")
     refresh_token = request.headers.get("X-Refresh-Token")
-    refresh = False
     
-    if not access_token or not access_token.startswith("Bearer "):
+    # Check existence of refresh token
+    if not refresh_token:
         return JSONResponse(
-            status_code=401, 
+            status_code=401,
             content={
                 "success": False, 
-                "message": "Unauthorized: No access token"
+                "message": "Missing refresh token"
+            }
+        )
+
+    # Check existence of access_token
+    if not access_token:
+        return JSONResponse(
+            status_code=401,
+            content= {
+                "success": False, 
+                "message": "Missing access token"
             }
         )
     
-    if not refresh_token:
-        refresh = True
+    # Check Format of access_token in Authorizzation header
+    if not access_token.startswith("Bearer "):
+        return JSONResponse(
+            status_code=401,
+            content= {
+                "success": False, 
+                "message": "Invalid access token: 'Bearer ' not found"
+            }
+        )
 
     access_token = access_token.split()[1]
+    username = None
+    access_expiry = None
+    refresh_expiry = None
     
     try:
-        payload = decode_access_token(access_token)
-        username = payload.get("username")
-        expiry = datetime.utcfromtimestamp(payload.get("expiry"))
-        
-        if refresh or expiry < datetime.utcnow():
+        access_payload = decode_access_token(access_token)
+        username = access_payload.get("username")
+        access_expiry = datetime.utcfromtimestamp(access_payload.get("expiry"))
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "success": False, 
+                "message": f"Invalid access token: {str(e)}"
+            }
+        )
+
+    try:
+        refresh_payload = decode_refresh_token(refresh_token)
+        refresh_username = refresh_payload.get("username")
+        refresh_expiry = datetime.utcfromtimestamp(refresh_payload.get("expiry"))
+
+        # Check if username field match
+        if username != refresh_username:
             return JSONResponse(
                 status_code=401,
                 content={
                     "success": False, 
-                    "message": "Token has expired"
-                }
-            )
-
-        statement = select(User).where(User.username == username)
-        db_user = session.exec(statement).first()
-
-        if db_user is None:
-            return JSONResponse(
-                status_code=400, 
-                content={
-                    "success": False, 
-                    "message": f"User {db_user} does not exist"
+                    "message": f"Username Mismatch in access_token and refresh_token"
                 }
             )
 
@@ -71,12 +101,53 @@ async def authenticate(request: Request, session: SessionDep, call_next):
             status_code=401,
             content={
                 "success": False, 
-                "message": f"Invalid token: {str(e)}"
+                "message": f"Invalid refresh token: {str(e)}"
             }
         )
 
+    # If refresh token is expird
+    if refresh_expiry < datetime.utcnow():
+        return JSONResponse(
+            status_code=401,
+            content={
+                "success": False,
+                "message": "Refresh token expired",
+            }
+        )
+    
+    # Check if the user exist in DB
+    statement = select(User).where(User.username == username)
+    db_user = session.exec(statement).first()
+
+    if db_user is None:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False, 
+                "message": "User does not exist"
+            }
+        )
+
+    # If access token is expired, issue a new one
+    if access_expiry < datetime.utcnow():
+        new_access_token = create_access_token(
+            data={"username": username},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "message": "Access token refreshed",
+                "access_token": new_access_token,
+                "refresh_token": refresh_token
+            }
+        )
+
+    
 
     return await call_next(request)
+
 
 
 
