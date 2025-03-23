@@ -14,6 +14,7 @@ class Response(BaseModel):
 
 class SignInResponse(Response):
     access_token: str | None
+    refresh_token: str | None
     username: str | None
 
 # Original?

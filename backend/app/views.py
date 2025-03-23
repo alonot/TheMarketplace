@@ -6,12 +6,79 @@ from jwt.exceptions import InvalidTokenError
 from .models import User
 from .request_models import RequestSignUp, RequestSignIn
 from .response_models import SignUpResponse, SignInResponse
-from .utils import get_password_hash, verify_password, create_access_token
+from .utils import get_password_hash, verify_password, create_access_token, decode_access_token
 from ..main import SessionDep
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 apirouter = APIRouter()
+
+authrouter = APIRouter(prefix="/auth")
+
+@authrouter.middleware("http")
+async def authenticate(request: Request, session: SessionDep, call_next):
+
+    if not request.url.path.startswith("/api/auth"):
+        return await call_next(request)
+
+    access_token = request.headers.get("Authorization")
+    refresh_token = request.headers.get("X-Refresh-Token")
+    refresh = False
+    
+    if not access_token or not access_token.startswith("Bearer "):
+        return JSONResponse(
+            status_code=401, 
+            content={
+                "success": False, 
+                "message": "Unauthorized: No access token"
+            }
+        )
+    
+    if not refresh_token:
+        refresh = True
+
+    access_token = access_token.split()[1]
+    
+    try:
+        payload = decode_access_token(access_token)
+        username = payload.get("username")
+        expiry = datetime.utcfromtimestamp(payload.get("expiry"))
+        
+        if refresh or expiry < datetime.utcnow():
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False, 
+                    "message": "Token has expired"
+                }
+            )
+
+        statement = select(User).where(User.username == username)
+        db_user = session.exec(statement).first()
+
+        if db_user is None:
+            return JSONResponse(
+                status_code=400, 
+                content={
+                    "success": False, 
+                    "message": f"User {db_user} does not exist"
+                }
+            )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "success": False, 
+                "message": f"Invalid token: {str(e)}"
+            }
+        )
+
+
+    return await call_next(request)
+
+
 
 @apirouter.post('/register', response_model=SignUpResponse)
 async def register_user(user: RequestSignUp, session: SessionDep):
@@ -54,7 +121,8 @@ async def login_user(user: RequestSignIn, session: SessionDep):
             status=400, 
             success=False, 
             message="User does not exist", 
-            access_token=None, 
+            access_token=None,
+            refresh_token=None, 
             username=None,
         )
 
@@ -64,16 +132,20 @@ async def login_user(user: RequestSignIn, session: SessionDep):
             success=False, 
             message="Invalid password", 
             access_token=None, 
+            refresh_token=None,
             username=None,
         )
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": db_user.username}, expires_delta=access_token_expires)
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    access_token = create_access_token(data={"username": db_user.username}, expires_delta=access_token_expires)
+    refresh_token = create_refresh_token(data={"username": db_user.username}, expires_delta=refresh_token_expires)
 
     return SignInResponse(
         status=200, 
         success=True, 
         message="Login successful", 
         access_token=access_token, 
+        refresh_token=refresh_token,
         username=db_user.username
     )
