@@ -16,15 +16,6 @@ apirouter = APIRouter()
 
 authrouter = APIRouter(prefix="/auth")
 
-from fastapi import APIRouter, Request
-from sqlmodel import select
-from datetime import datetime, timedelta
-from fastapi.responses import JSONResponse
-from ..main import SessionDep
-from .models import User
-from .utils import decode_access_token, decode_refresh_token, create_access_token
-
-authrouter = APIRouter(prefix="/auth")
 
 @authrouter.middleware("http")
 async def authenticate(request: Request, session: SessionDep, call_next):
@@ -143,8 +134,6 @@ async def authenticate(request: Request, session: SessionDep, call_next):
                 "refresh_token": refresh_token
             }
         )
-
-    
 
     return await call_next(request)
 
