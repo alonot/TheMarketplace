@@ -5,9 +5,9 @@ import jwt
 from jwt.exceptions import InvalidTokenError
 
 # Dummy Key change it later on
-SECRET_KEY = "8c21acd5cb1fb410330056a1393daba18f80a40a72555befc76579b0553654cc"
+ACCESS_SECRET_KEY = "8c21acd5cb1fb410330056a1393daba18f80a40a72555befc76579b0553654cc"
+REFRESH_SECRET_KEY = "8c21acd5cb1fb410330056a1393daba18f80a40a72555befc76579b0553654cc"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -20,6 +20,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
-    to_encode.update({"exp": expire})
+    to_encode.update({"expiry": expire})
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, ACCESS_SECRET_KEY, algorithm=ALGORITHM)
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(days=7))
+    to_encode.update({"expiry": expire})
+
+    return jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_access_token(token: str) -> dict:
+    return jwt.decode(token, ACCESS_SECRET_KEY, algorithms=[ALGORITHM])
+
+def decode_refresh_token(token: str) -> dict:
+    return jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
