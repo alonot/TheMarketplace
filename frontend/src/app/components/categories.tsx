@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 
 export const categorieslist = [
     {
@@ -48,10 +48,11 @@ function Category({ categoryname, logo }: { categoryname: string, logo: string }
 
 export default function BrowseCategory() {
     const [showmore, setShowmore] = useState(0);
+    const [strsmore, setStrsmore] = useState("Show more...");
     let categories = categorieslist.map(category => <Category key={category.id} categoryname={category.categoryname} logo={category.logo}></Category>)
     if (showmore == 0) {
         categories = categories.slice(0, Math.min(categories.length, 4));
-    }   
+    }
     return (
         <>
             <div>
@@ -60,11 +61,14 @@ export default function BrowseCategory() {
                     <div onClick={() => {
                         if (showmore == 0) {
                             setShowmore(1);
+                            setStrsmore("Show less...");
                         }
                         else {
                             setShowmore(0);
+                            setStrsmore("Show more...");
                         }
-                    }}><button className='cursor-pointer hover:text-[#34a8eb]'>Show more....</button></div>
+                    }}>
+                        <button className='cursor-pointer hover:text-[#34a8eb]'>{strsmore}</button></div>
                 </div >
                 <div className='grid grid-cols-4 w-1/2 border-2 border-black border-solid'>
                     {categories}
