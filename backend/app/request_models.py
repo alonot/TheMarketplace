@@ -34,3 +34,7 @@ class RequestSignIn(BaseModel):
         if self.username is None and self.email is None:
             raise ValueError("Both username and email cannot be None")
         return self
+    
+class FeedbackRequest(BaseModel):
+    email: str
+    content: str

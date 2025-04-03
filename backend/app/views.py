@@ -7,8 +7,8 @@ from backend.admin.request_models import IdLists
 from backend.app.utils import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, create_access_token, create_refresh_token
 from backend.main import SessionDep
 from .models import User
-from .request_models import RequestSignUp, RequestSignIn
-from .response_models import ItemRequestResponse, ItemRequestsResponse, ItemResponse, ItemsResponse, SignUpResponse, SignInResponse
+from .request_models import FeedbackRequest, RequestSignUp, RequestSignIn
+from .response_models import ItemRequestResponse, ItemRequestsResponse, ItemResponse, ItemsResponse, Response, SignUpResponse, SignInResponse
 
 apirouter = APIRouter()
 
@@ -21,6 +21,7 @@ apirouter = APIRouter()
 /request/get_ids : return all the ids of itemRequests
 /item/all?limit=x&page=y&tag=z&name=<startsWith> : get all the Items
 /request/all?limit=x&page=y&tag=z&name=<startsWith> : get all the ItemRequests
+/feedback/submit
 '''
 
 @apirouter.post('/register', response_model=SignUpResponse)
@@ -49,10 +50,9 @@ async def register_user(user: RequestSignUp, session: SessionDep):
 
     return SignUpResponse(
         status=200, 
-        success=True, 
+        success=True,
         message="User registered successfully"
     )
-
 
 @apirouter.post('/login', response_model=SignInResponse)
 async def login_user(user: RequestSignIn, session: SessionDep):
@@ -95,7 +95,7 @@ async def login_user(user: RequestSignIn, session: SessionDep):
 
 
 @apirouter.get('/item/all', response_model=ItemsResponse)
-async def get_all_items(request: Request, session: SessionDep, 
+async def get_all_items( session: SessionDep, 
     limit: Optional[int] = Query(10, description="Number of items per page"),
     page: Optional[int] = Query(1, description="Page number"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
@@ -106,7 +106,7 @@ async def get_all_items(request: Request, session: SessionDep,
     pass
 
 @apirouter.get('/request/all', response_model=ItemRequestsResponse)
-async def get_all_item_requests( request: Request, session: SessionDep,
+async def get_all_item_requests(  session: SessionDep,
     limit: Optional[int] = Query(10, description="Number of items per page"),
     page: Optional[int] = Query(1, description="Page number"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
@@ -117,28 +117,35 @@ async def get_all_item_requests( request: Request, session: SessionDep,
     pass
 
 @apirouter.get('/item/get_ids', response_model=IdLists)
-async def get_all_items(request: Request, session: SessionDep):
+async def get_all_items_ids( session: SessionDep):
     """
-    Get all item with given params
+    Get all item ids 
     """
     pass
 
 @apirouter.get('/request/get_ids', response_model=IdLists)
-async def get_all_item_requests( request: Request, session: SessionDep):
+async def get_all_item_requests_ids(  session: SessionDep):
     """
-    Get all itemRequest with given params
+    Get all itemRequest ids
     """
     pass
 
 @apirouter.get('/request/{id}', response_model=ItemRequestResponse)
-async def get_request_info(id: int, request: Request, session: SessionDep):
+async def get_request_info(id: int,  session: SessionDep):
     """
     Get details of a specific item request.
     """
     pass
 
 @apirouter.get('/item/{id}', response_model=ItemResponse)
-async def get_item_info(id: int, request: Request, session: SessionDep):
+async def get_item_info(id: int,  session: SessionDep):
+    """
+    Get details of a specific item request.
+    """
+    pass
+
+@apirouter.get('/feedback/submit', response_model=Response)
+async def submit_feedback(feedback:FeedbackRequest):
     """
     Get details of a specific item request.
     """
