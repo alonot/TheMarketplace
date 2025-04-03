@@ -1,13 +1,98 @@
-## all the database tables
+from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List
+from enum import Enum
 
-from sqlmodel import Field, SQLModel
+default_now = "CURRENT_TIMESTAMP"
+
+class ParentType(str, Enum):
+    PAYMENT = "PAYMENT"
+    ITEM = "ITEM"
+    ANSWER = "ANSWER"
+
+class AnswerField(str, Enum):
+    INTEGER = "INTEGER"
+    IMG = "IMG"
+    STRING = "STRING"
+
+class User(SQLModel, table=True):
+    pk: int = Field(primary_key=True)
+    email: str = Field(primary_key=True, unique=True)
+    username: str = Field(unique=True, nullable=False)
+    name: str =  Field()
+    rollno: str =  Field(unique=True)
+    role: str = Field()
+    admin_id: Optional[int] = Field()
+    created_at: str = Field(default=default_now)
+    
+    payments: List["Payment"] = Relationship(back_populates="user")
+    transactions: List["Transaction"] = Relationship(back_populates="user")
+
+class Payment(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.pk")
+    title: str = Field()
+    
+    user: User = Relationship(back_populates="payments")
+    questions_list: List["Question"] = Relationship(back_populates="payment")
+    images: List["Image"] = Relationship(back_populates="payment")
+
+class Question(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    question: str = Field(nullable=False)
+    payment_id: int = Field(foreign_key="payment.id", nullable=False)
+    field_type: AnswerField = Field()
+    field_len: int = Field()
+    
+    payment: Payment = Relationship(back_populates="questions_list")
+    answers: List["Answer"] = Relationship(back_populates="question")
 
 
-class User(SQLModel, table = True):
-    username: str = Field(primary_key=True)
-    name: str = Field()
-    email: str = Field() ## email field will be verified via pydantic in request
-    password: str = Field()
-    rollno: str = Field(max_length=10, min_length=9) # NOTE: our roll number have 9 digits but still going with 10 digits. Could be changed if all rollnumbers have 9 digits
-    ## relationships
-    #...
+class Image(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    data: bytes = Field()
+    parent_id: int = Field(nullable=False)
+    parent_type: ParentType = Field(nullable=False)
+
+class Transaction(SQLModel, table=True):
+    transaction_id: int = Field(primary_key=True)
+    payment_method: int = Field(foreign_key="payment.id")
+    user_id: int = Field(foreign_key="user.pk")
+    
+    user: User = Relationship(back_populates="transactions")
+    answers: List["Answer"] = Relationship(back_populates="transaction")
+
+class Answer(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    answer: str = Field(nullable=False)
+    question_id: int = Field(foreign_key="question.id", nullable=False)
+    transaction_id: int = Field(foreign_key="transaction.transaction_id", nullable=False)
+    image_answer: Optional[int] = Field(foreign_key="image.id")
+    
+    question: Question = Relationship(back_populates="answers")
+    transaction: Transaction = Relationship(back_populates="answers")
+    image: Optional["Image"] = Relationship()
+    
+class Item(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    title: str = Field()
+    description: str = Field()
+    image_id : Optional[int] = Field(foreign_key="image.id")
+    approved_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+    rejected_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+
+    approved_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.approved_by"})
+    rejected_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.rejected_by"})
+
+class ItemRequest(SQLModel, table=True):
+    id: int = Field(primary_key=True)
+    title: str = Field()
+    description: str = Field()
+    approved_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+    rejected_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+
+    approved_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.approved_by"})
+    rejected_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.rejected_by"})
+
+class Tag(SQLModel, table=True):
+    id: str = Field(primary_key=True)
+    name: str = Field(nullable=False)

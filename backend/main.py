@@ -21,7 +21,6 @@ else:
 
 engine = create_engine(dbUrl, connect_args={'check_same_thread': False}, echo=True)
 
-
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
@@ -52,6 +51,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 app = FastAPI(lifespan=lifespan)
 
 from .app.views import apirouter 
+from .auth.views import authrouter 
+from .admin.views import adminrouter 
+from .dependencies import admin_middleware, app_middleware, auth_middleware
 
 ## Welcome message
 @app.get('/', response_class=HTMLResponse)
@@ -60,4 +62,19 @@ def home():
     <h1>Welcome</h1> <strong>to the TheIITPKDMarketplace api.</strong>
     """
 
-app.include_router(apirouter, prefix='/api')
+app.add_middleware(app_middleware)
+
+api_app = FastAPI()
+api_app.include_router(apirouter)
+
+auth_app = FastAPI()
+auth_app.add_middleware(auth_middleware)
+auth_app.include_router(authrouter)
+
+admin_app = FastAPI()
+admin_app.add_middleware(admin_middleware)
+admin_app.include_router(adminrouter)
+
+app.mount("/api", api_app)
+app.mount("/auth", auth_app)
+app.mount("/admin", admin_app)

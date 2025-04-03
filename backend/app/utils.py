@@ -2,12 +2,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from passlib.context import CryptContext
 import jwt
-from jwt.exceptions import InvalidTokenError
 
 # Dummy Key change it later on
 ACCESS_SECRET_KEY = "8c21acd5cb1fb410330056a1393daba18f80a40a72555befc76579b0553654cc"
 REFRESH_SECRET_KEY = "8c21acd5cb1fb410330056a1393daba18f80a40a72555befc76579b0553654cc"
 ALGORITHM = "HS256"
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

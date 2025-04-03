@@ -1,6 +1,7 @@
 ## define pydantic models for requests here
 
 from pydantic import BaseModel
+from typing import List, Optional
 
 
 class Response(BaseModel):
@@ -25,3 +26,24 @@ class SignInResponse(Response):
 class SignUpResponse(Response):
       pass
     
+
+
+class ItemRequest:
+    id: int
+    title: str
+    description: str
+
+class Item(ItemRequest):
+    image : Optional[str]
+
+class ItemResponse(Response):
+    item: Item
+
+class ItemRequestResponse(Response):
+    item: ItemRequest
+
+class ItemsResponse(Response):
+    items: List[Item]
+
+class ItemRequestsResponse(Response):
+    items: List[ItemRequest]
