@@ -20,8 +20,9 @@ class User(SQLModel, table=True):
     username: str = Field(unique=True, nullable=False)
     name: str =  Field()
     rollno: str =  Field(unique=True)
+    hostel: str =  Field()
     role: str = Field()
-    admin_id: Optional[int] = Field()
+    admin_id: Optional[int] = Field(primary_key=True)
     created_at: str = Field(default=default_now)
     
     payments: List["Payment"] = Relationship(back_populates="user")
@@ -30,7 +31,13 @@ class User(SQLModel, table=True):
 class Payment(SQLModel, table=True):
     id: int = Field(primary_key=True)
     user_id: int = Field(foreign_key="user.pk")
-    title: str = Field()
+    title: str = Field()   
+    description: str = Field()
+    approved_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+    rejected_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
+
+    approved_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.approved_by"})
+    rejected_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.rejected_by"})
     
     user: User = Relationship(back_populates="payments")
     questions_list: List["Question"] = Relationship(back_populates="payment")
@@ -72,10 +79,23 @@ class Answer(SQLModel, table=True):
     transaction: Transaction = Relationship(back_populates="answers")
     image: Optional["Image"] = Relationship()
     
+
+class ItemTagLink(SQLModel, table=True):
+    item_id: int = Field(foreign_key="item.id", primary_key=True)
+    tag_name: str = Field(foreign_key="tag.name", primary_key=True)
+
+class ItemRequestTagLink(SQLModel, table=True):
+    item_request_id: int = Field(foreign_key="itemrequest.id", primary_key=True)
+    tag_name: str = Field(foreign_key="tag.name", primary_key=True)
+
 class Item(SQLModel, table=True):
     id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.pk")
     title: str = Field()
+    short_description : str = Field(max_length=20)
     description: str = Field()
+    dilevery_type: str = Field()
+    created_at: str = Field(default=default_now)
     image_id : Optional[int] = Field(foreign_key="image.id")
     approved_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
     rejected_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
@@ -83,16 +103,24 @@ class Item(SQLModel, table=True):
     approved_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.approved_by"})
     rejected_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.rejected_by"})
 
+    tags: List["Tag"] = Relationship(back_populates="items", link_model=ItemTagLink)
+
 class ItemRequest(SQLModel, table=True):
     id: int = Field(primary_key=True)
+    user_id: int = Field(foreign_key="user.pk")
     title: str = Field()
     description: str = Field()
+    created_at: str = Field(default=default_now)
     approved_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
     rejected_by: Optional[int] = Field(default=None, foreign_key="user.admin_id")
 
     approved_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.approved_by"})
     rejected_admin: Optional["User"] = Relationship(sa_relationship_kwargs={"primaryjoin": "User.admin_id==Item.rejected_by"})
 
+    tags: List["Tag"] = Relationship(back_populates="item_requests", link_model=ItemRequestTagLink)
+
 class Tag(SQLModel, table=True):
-    id: str = Field(primary_key=True)
-    name: str = Field(nullable=False)
+    name: str = Field(nullable=False, primary_key=True, unique=True)
+
+    items: List[Item] = Relationship(back_populates="tags", link_model=ItemTagLink)
+    item_requests: List[ItemRequest] = Relationship(back_populates="tags", link_model=ItemRequestTagLink)

@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Query
 from sqlmodel import select
 from datetime import timedelta
 
@@ -8,19 +8,21 @@ from backend.app.utils import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_
 from backend.main import SessionDep
 from .models import User
 from .request_models import FeedbackRequest, RequestSignUp, RequestSignIn
-from .response_models import ItemRequestResponse, ItemRequestsResponse, ItemResponse, ItemsResponse, Response, SignUpResponse, SignInResponse
+from .response_models import ItemRequestResponse, ItemRequestsResponse, ItemResponse, ItemsResponse, PaymentsResponse, Response, SignUpResponse, SignInResponse
 
 apirouter = APIRouter()
 
 '''
-/login
-/register
+/login : done
+/register : done
 /item/<id>
 /request/<id>
 /item/get_ids : return all the ids of item
 /request/get_ids : return all the ids of itemRequests
-/item/all?limit=x&page=y&tag=z&name=<startsWith> : get all the Items
-/request/all?limit=x&page=y&tag=z&name=<startsWith> : get all the ItemRequests
+/item/all?limit=x&page=y&tag=z&name=<contains> : get all the Items. Eg : limit=10&page=0 means return top 10 entries
+                                                                           limit=10&page=2 means return top entries from 21th to 30th position [if, assuming 1-indexed sorted array by time]
+/request/all?limit=x&page=y&tag=z&name=<contains> : get all the ItemRequests
+/user/<id>/payment_method/
 /feedback/submit
 '''
 
@@ -99,7 +101,7 @@ async def get_all_items( session: SessionDep,
     limit: Optional[int] = Query(10, description="Number of items per page"),
     page: Optional[int] = Query(1, description="Page number"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
-    name: Optional[str] = Query(None, description="Filter by name (starts with)")):
+    name: Optional[str] = Query(None, description="Filter by name (Contains)")):
     """
     Get all item with given params
     """
@@ -110,7 +112,7 @@ async def get_all_item_requests(  session: SessionDep,
     limit: Optional[int] = Query(10, description="Number of items per page"),
     page: Optional[int] = Query(1, description="Page number"),
     tag: Optional[str] = Query(None, description="Filter by tag"),
-    name: Optional[str] = Query(None, description="Filter by name (starts with)")):
+    name: Optional[str] = Query(None, description="Filter by name (Contains)")):
     """
     Get all itemRequest with given params
     """
@@ -142,6 +144,14 @@ async def get_item_info(id: int,  session: SessionDep):
     """
     Get details of a specific item request.
     """
+    pass
+
+
+@apirouter.get("/user/{user_id}/payment_methods/", response_model=PaymentsResponse)
+def get_payment_methods(user_id: int):
+    '''
+    returns all the payment methods of a particular user, with its username
+    '''
     pass
 
 @apirouter.get('/feedback/submit', response_model=Response)

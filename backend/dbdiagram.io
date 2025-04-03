@@ -42,6 +42,7 @@ Table Answer {
 Table Payment {
   id integer [primary key]
   user_id integer
+  description varchar
   title varchar
   questions varchar
 }
@@ -62,11 +63,13 @@ Table Transaction {
 Table Item {
   id integer [primary key]
   title varchar
+  description varchar
+  short_description varchar
   approved_by integer [default: null]
   rejected_by integer [default: null]
 }
 
-Table Request {
+Table ItemRequest {
   id integer [primary key]
   title varchar
   description varchar
@@ -91,9 +94,8 @@ Ref Item_images: Image.parent_id > Item.id
 Ref Transaction_user: Transaction.user_id > User.pk
 Ref Item_approved_by: Item.approved_by > User.admin_id
 Ref Item_rejected_by: Item.rejected_by > User.admin_id
-Ref Request_approved_by: Request.approved_by > User.admin_id
-Ref Request_rejected_by: Request.rejected_by > User.admin_id
+Ref Request_approved_by: ItemRequest.approved_by > User.admin_id
+Ref ItemRequest_rejected_by: ItemRequest.rejected_by > User.admin_id
 Ref ItemTag_tag: Item.id <> Tag.id
-Ref RequestTag_request: Request.id <> Tag.id
+Ref ItemRequestTag_ItemRequest: ItemRequest.id <> Tag.id
 Ref transaction_payment : Transaction.payment_method > Payment.id
-
