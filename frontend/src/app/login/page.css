@@ -1,0 +1,86 @@
+body{
+    background-color: white;
+}
+
+#title{
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    position: absolute;
+    left: 5%;
+    top: 30%;
+    font-size: 90px;
+    color:#002f34;
+    text-align: center;
+}
+
+.body{
+    background-color: #002f34;
+    padding-left: 100px;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    clip-path: polygon(100% 100%, 0% 100%, 100% 0%);
+}
+
+a{
+    color: #b3f7ff;
+}
+
+#passentryarea{
+    margin-top: 30px;
+}
+#textboxes{
+    position: absolute;
+    width:300px;
+    left: 70%;
+    top: 60%;
+    height: 80px;
+    line-height: 80px;
+}
+
+#registertext{
+    position: relative;
+    margin-top: 100px;
+    text-align: right;
+}
+
+
+input{
+    position: absolute;
+    outline: none;
+    
+    width:100%;
+    padding: 0 20px;
+    line-height: 80px;
+    border-radius: 15px;
+    border:2px solid #ffffff;
+    background: transparent;
+    transition: 0.1s ease;
+    z-index: 1111;
+}
+
+.labelline{
+    position: absolute;
+    color: #ffffff;
+    font-size: 1.4em;
+    padding: 0 15px;
+    background-color: #002f34;
+    margin: 0 10px;
+    transition: 0.2s ease;
+}
+
+input:focus,
+input:valid{
+    color: white;
+    border: 4px solid white;
+}
+
+input:focus + .labelline,
+input:valid + .labelline{
+    color: white;
+    height: 30px;
+    line-height: 30px;
+    transform: translate(-7px,-13px) scale(0.8);
+    z-index: 1111;
+}
